@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海龟汤</title>
+<style>
+:root{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--border:#30363d;--text:#c9d1d9;--text2:#8b949e;--accent:#58a6ff;--accent2:#1f6feb;--success:#3fb950;--danger:#f85149;--warn:#d29922;--easy:#3fb950;--medium:#d29922;--hard:#f85149;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+.sidebar{width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.logo{padding:20px;font-size:18px;font-weight:600;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.logo::before{content:"🐢";font-size:22px}
+.nav{padding:12px;display:flex;flex-direction:column;gap:4px}
+.nav-item{padding:10px 14px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:14px;transition:background .15s;color:var(--text2)}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--bg3);color:var(--accent);font-weight:500}
+.nav-item .icon{font-size:16px;width:20px;text-align:center}
+.stats-mini{margin-top:auto;padding:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)}
+.stats-mini .row{display:flex;justify-content:space-between;margin:4px 0}
+.stats-mini .num{color:var(--text);font-weight:600}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.header{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.header h2{font-size:16px;font-weight:600}
+.btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;transition:all .15s}
+.btn:hover{background:var(--border)}
+.btn.primary{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.btn.primary:hover{background:var(--accent)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.success{background:var(--success);border-color:var(--success);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.view{display:none;flex:1;overflow:auto;padding:24px}
+.view.active{display:block}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;max-width:900px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:all .2s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card .title{font-size:15px;font-weight:600;margin-bottom:8px}
+.card .desc{font-size:13px;color:var(--text2);line-height:1.5}
+.card .meta{margin-top:12px;display:flex;gap:8px}
+.tag{font-size:11px;padding:3px 8px;border-radius:4px;background:var(--bg3);color:var(--text2)}
+.tag.easy{color:var(--easy)}.tag.medium{color:var(--medium)}.tag.hard{color:var(--hard)}
+.api-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.api-status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--text2)}
+.api-status.ok::before{background:var(--success)}
+.game-area{display:flex;flex-direction:column;height:100%;max-width:800px;margin:0 auto}
+.game-info{display:flex;gap:16px;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.game-info .label{font-size:12px;color:var(--text2)}
+.game-info .value{font-size:14px;font-weight:600}
+.game-info .timer{font-family:monospace;font-size:16px;color:var(--accent)}
+.chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:12px}
+.msg{max-width:80%;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.6;animation:msgIn .25s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.msg.system{align-self:center;background:var(--bg3);color:var(--text2);font-size:12px;max-width:90%}
+.msg.player{align-self:flex-end;background:var(--accent2);color:#fff;border-bottom-right-radius:4px}
+.msg.host{align-self:flex-start;background:var(--bg2);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-host-name{font-size:11px;color:var(--accent);margin-bottom:4px;font-weight:600}
+.answer-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;margin-left:6px}
+.answer-badge.yes{background:rgba(63,185,80,.2);color:var(--success)}
+.answer-badge.no{background:rgba(248,81,73,.2);color:var(--danger)}
+.answer-badge.irrelevant{background:rgba(139,148,158,.2);color:var(--text2)}
+.answer-badge.unclear{background:rgba(210,153,34,.2);color:var(--warn)}
+.retry-action{margin-top:10px}
+.result-detail{display:none;text-align:left;background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.25);border-radius:10px;padding:14px;margin-top:16px;font-size:13px;line-height:1.7}
+.result-detail strong{color:var(--accent)}
+.input-area{flex-shrink:0;display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border)}
+.input-area input{flex:1;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:14px;outline:none}
+.input-area input:focus{border-color:var(--accent)}
+.input-area .btn{padding:10px 18px}
+.input-area .btn.loading{position:relative;color:transparent}
+.input-area .btn.loading::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;top:50%;left:50%;margin:-8px 0 0 -8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.thinking-hint{font-size:11px;color:var(--text2);text-align:center;padding:4px}
+.result-panel{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:600px;margin:0 auto;text-align:center}
+.result-panel .status-icon{font-size:48px;margin-bottom:12px}
+.result-panel h2{font-size:20px;margin-bottom:8px}
+.result-panel .subtitle{color:var(--text2);font-size:14px;margin-bottom:20px}
+.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+.result-stat{background:var(--bg3);padding:14px;border-radius:10px}
+.result-stat .num{font-size:22px;font-weight:700;color:var(--accent)}
+.result-stat .label{font-size:12px;color:var(--text2);margin-top:4px}
+.soup-detail{text-align:left;background:var(--bg3);border-radius:10px;padding:16px;margin-top:16px}
+.soup-detail h4{font-size:13px;color:var(--text2);margin-bottom:8px;text-transform:uppercase}
+.soup-detail p{font-size:14px;line-height:1.7}
+.library-toolbar{display:flex;gap:8px;margin-bottom:16px}
+.library-toolbar .btn.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
+.soup-list{display:flex;flex-direction:column;gap:8px;max-width:800px}
+.soup-row{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s}
+.soup-row:hover{border-color:var(--accent)}
+.soup-row .s-title{flex:1;font-size:14px;font-weight:500}
+.soup-row .s-diff{font-size:11px;padding:3px 8px;border-radius:4px;font-weight:600}
+.s-diff.easy{background:rgba(63,185,80,.15);color:var(--easy)}
+.s-diff.medium{background:rgba(210,153,34,.15);color:var(--medium)}
+.s-diff.hard{background:rgba(248,81,73,.15);color:var(--hard)}
+.soup-row .s-stat{font-size:12px;color:var(--text2);min-width:80px;text-align:right}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;max-width:800px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.stat-card .big{font-size:32px;font-weight:700;color:var(--accent)}
+.stat-card .label{font-size:13px;color:var(--text2);margin-top:6px}
+.history-list{max-width:800px;margin-top:20px}
+.history-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:13px}
+.history-item .h-title{flex:1}
+.history-item .h-result{font-weight:600}
+.history-item .h-result.win{color:var(--success)}
+.history-item .h-result.lose{color:var(--danger)}
+.history-item .h-meta{color:var(--text2)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:.5}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:480px;max-width:90vw}
+.modal h3{font-size:16px;margin-bottom:16px}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5}
+.modal input,.modal select{width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px;margin-bottom:12px;outline:none}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.modal .hint{font-size:11px;color:var(--text2);margin-top:-8px;margin-bottom:12px}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@media(max-width:640px){.sidebar{display:none}.home-grid{grid-template-columns:1fr}.result-stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<div class="logo">海龟汤</div>
+<nav class="nav">
+<div class="nav-item active" data-view="home" onclick="switchView('home')"><span class="icon">▶</span>开始游戏</div>
+<div class="nav-item" data-view="library" onclick="switchView('library')"><span class="icon">📚</span>题库</div>
+<div class="nav-item" data-view="stats" onclick="switchView('stats')"><span class="icon">📊</span>我的战绩</div>
+<div class="nav-item" onclick="showConfig()"><span class="icon">⚙️</span>API 配置</div>
+</nav>
+<div class="stats-mini">
+<div class="row"><span>总游戏</span><span class="num" id="mini-total">0</span></div>
+<div class="row"><span>通关</span><span class="num" id="mini-win">0</span></div>
+<div class="row"><span>胜率</span><span class="num" id="mini-rate">0%</span></div>
+<div class="row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)"><span>推理模式</span><span class="num" id="mini-mode" style="font-size:11px">本地</span></div>
+</div>
+</aside>
+<main class="main">
+<div class="view active" id="view-home">
+<div class="header">
+<h2>选择难度</h2>
+<div style="display:flex;align-items:center;gap:12px">
+<div class="api-status" id="api-status"><span>本地模式</span></div>
+<button class="btn" onclick="showConfig()">⚙️ 配置 API</button>
+</div>
+</div>
+<div class="home-grid">
+<div class="card" onclick="startGame('easy')"><div class="title">🌱 简单</div><div class="desc">适合新手入门的经典题目，推理线索较为直接，汤面与汤底关联明显。</div><div class="meta"><span class="tag easy">简单</span><span class="tag" id="count-easy">0 题</span></div></div>
+<div class="card" onclick="startGame('medium')"><div class="title">🔥 中等</div><div class="desc">需要一定逻辑推理能力，线索较为隐蔽，可能需要多角度思考。</div><div class="meta"><span class="tag medium">中等</span><span class="tag" id="count-medium">0 题</span></div></div>
+<div class="card" onclick="startGame('hard')"><div class="title">💀 困难</div><div class="desc">高难度谜题，反转出人意料，需要极强的观察力和发散思维。</div><div class="meta"><span class="tag hard">困难</span><span class="tag" id="count-hard">0 题</span></div></div>
+<div class="card" onclick="startGame('random')"><div class="title">🎲 随机</div><div class="desc">从全部题库中随机抽取一道题，未知的挑战。</div><div class="meta"><span class="tag">随机</span><span class="tag" id="count-total">0 题</span></div></div>
+</div>
+</div>
+<div class="view" id="view-game">
+<div class="game-area">
+<div class="game-info">
+<div><div class="label">难度</div><div class="value" id="g-diff">-</div></div>
+<div><div class="label">题目</div><div class="value" id="g-title">-</div></div>
+<div style="margin-left:auto"><div class="label">用时</div><div class="timer" id="g-timer">00:00</div></div>
+<div><div class="label">提问</div><div class="value" id="g-qcount">0</div></div>
+<button class="btn" onclick="requestHint()" id="hint-btn">💡 提示 3/3</button>
+<button class="btn" onclick="showGuess()">我要揭底</button>
+<button class="btn danger" onclick="giveUp()">放弃</button>
+</div>
+<div class="chat" id="chat"></div>
+<div class="thinking-hint" id="thinking-hint" style="display:none">🤖 正在调用 AI 判断，请稍候...</div>
+<div class="input-area">
+<input type="text" id="q-input" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')sendQuestion()">
+<button class="btn primary" id="send-btn" onclick="sendQuestion()">提问</button>
+</div>
+</div>
+</div>
+<div class="view" id="view-result">
+<div class="result-panel">
+<div class="status-icon" id="r-icon">🏆</div>
+<h2 id="r-title">恭喜通关！</h2>
+<div class="subtitle" id="r-sub">你揭开了汤底的真相</div>
+<div class="result-stats">
+<div class="result-stat"><div class="num" id="r-time">00:00</div><div class="label">用时</div></div>
+<div class="result-stat"><div class="num" id="r-questions">0</div><div class="label">提问次数</div></div>
+<div class="result-stat"><div class="num" id="r-hints">0</div><div class="label">使用提示</div></div>
+</div>
+<div class="result-stat" style="margin-top:12px;background:var(--bg3);padding:14px;border-radius:10px"><div class="num" id="r-score">0</div><div class="label">最终得分</div></div>
+<div class="soup-detail">
+<h4>📝 你的答案</h4>
+<p id="r-guess" style="color:var(--accent);font-weight:600">-</p>
+</div>
+<div class="result-detail" id="r-partial-detail"><strong>已经抓住的线索</strong><p id="r-matched">-</p><strong>还可以补充</strong><p id="r-missing">-</p></div>
+<div class="soup-detail">
+<h4>🍲 汤底（真相）</h4>
+<p id="r-soup">-</p>
+</div>
+<div style="margin-top:20px;display:flex;gap:8px;justify-content:center">
+<button class="btn primary" onclick="switchView('home')">再来一局</button>
+<button class="btn success" id="r-continue" onclick="continueGuess()" style="display:none">补充答案</button>
+<button class="btn" onclick="showReview()">📋 回看本局</button>
+<button class="btn" onclick="switchView('library')">浏览题库</button>
+</div>
+</div>
+</div>
+<div class="view" id="view-library">
+<div class="header"><h2>题库</h2></div>
+<div class="library-toolbar">
+<button class="btn active" onclick="filterLib('all',this)">全部</button>
+<button class="btn" onclick="filterLib('easy',this)">简单</button>
+<button class="btn" onclick="filterLib('medium',this)">中等</button>
+<button class="btn" onclick="filterLib('hard',this)">困难</button>
+</div>
+<div class="soup-list" id="soup-list"></div>
+</div>
+<div class="view" id="view-stats">
+<div class="header"><h2>我的战绩</h2></div>
+<div class="stats-grid">
+<div class="stat-card"><div class="big" id="s-total">0</div><div class="label">总游戏次数</div></div>
+<div class="stat-card"><div class="big" id="s-win">0</div><div class="label">通关次数</div></div>
+<div class="stat-card"><div class="big" id="s-rate">0%</div><div class="label">胜率</div></div>
+<div class="stat-card"><div class="big" id="s-best">-</div><div class="label">最快通关</div></div>
+</div>
+<h3 style="margin:24px 0 12px;font-size:14px;color:var(--text2)">历史记录</h3>
+<div class="history-list" id="history-list"></div>
+</div>
+</main>
+</div>
+<div class="modal-overlay" id="config-modal">
+<div class="modal">
+<h3>🔧 API 配置</h3>
+<p>配置 DeepSeek API 后，游戏会使用 AI 语义判断你的提问，比本地关键词匹配更智能。</p>
+<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">API Endpoint</label>
+<input type="text" id="cfg-endpoint" value="https://api.deepseek.com/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
+<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">模型名称</label>
+<input type="text" id="cfg-model" value="deepseek-chat" placeholder="deepseek-chat">
+<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">API Key</label>
+<input type="password" id="cfg-key" placeholder="sk-...">
+<div class="hint">Key 仅保存在浏览器 localStorage，不会上传至任何服务器。</div>
+<div class="actions">
+<button class="btn" onclick="closeConfig()">取消</button>
+<button class="btn danger" onclick="clearConfig()">清除配置</button>
+<button class="btn primary" onclick="saveConfig()">保存</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="guess-modal">
+<div class="modal">
+<h3>🎯 我要揭底</h3>
+<p>请直接输入你认为的真相：</p>
+<input type="text" id="guess-input" placeholder="输入你的答案..." onkeydown="if(event.key==='Enter')submitGuess()">
+<div class="actions">
+<button class="btn" onclick="closeGuess()">取消</button>
+<button class="btn primary" onclick="submitGuess()">确认</button>
+</div>
+</div>
+</div>
+<div class="modal-overlay" id="review-modal">
+<div class="modal" style="width:600px;max-height:80vh;display:flex;flex-direction:column">
+<h3>📋 本局记录</h3>
+<div id="review-content" style="flex:1;overflow-y:auto;background:var(--bg3);border-radius:10px;padding:16px;margin:12px 0;font-size:13px;line-height:1.8"></div>
+<div class="actions">
+<button class="btn" onclick="closeReview()">关闭</button>
+</div>
+</div>
+</div>
+<script>
+const DEFAULT_SOUPS=[
+{id:1,title:"半根火柴",difficulty:"easy",surface:"一个人死在沙漠里，头朝下趴在地上，手里紧紧攥着半根火柴。周围没有任何足迹。",answer:"这个人乘坐热气球穿越沙漠，途中燃料耗尽。为了减轻重量，他们抽签决定谁跳下去。他抽到了最短的那根火柴，所以跳了下来摔死了。",hints:["关注死者手里的物品——为什么是'半根'火柴，而不是一根？","沙漠里没有足迹，说明他不是走过来的。想想还有什么方式能让人从天而降？","半根火柴是用来抽签的，抽到最短签的人要跳下去减轻重量。"]},
+{id:2,title:"雨夜广播",difficulty:"easy",surface:"一个男人在雨夜开车回家，途中听广播说一座桥塌了。他笑了笑，继续开车。几分钟后，他死了。",answer:"这个男人是个瞎子，在出租车上载客。广播说的是他所在的桥塌了，但他以为是别的桥，笑着继续开，结果连人带车掉下桥死了。",hints:["广播说桥塌了，他笑了笑继续开。他为什么如此自信？","想想他'开'的是什么？他自己真的是司机吗？","他是个瞎子，在出租车上。广播说的是他所在的桥塌了，他以为是别的桥。"]},
+{id:3,title:"最后一餐",difficulty:"easy",surface:"一名死刑犯在行刑前，狱警问他最后一餐想吃什么。他说想吃妈妈做的苹果派。吃完后，他说：谢谢，我现在可以安心走了。随后被执行死刑。",answer:"他就是想吃妈妈做的苹果派，没有任何诡计。这是一道温情题——有时候真相就是这么简单。",hints:["这道题的答案可能比你想象的更简单。","他真的有什么阴谋吗？还是只是一个普通的心愿？","没有任何诡计，他就是单纯想吃妈妈做的苹果派。"]},
+{id:4,title:"电梯里的男人",difficulty:"medium",surface:"一个男人住在20楼。每天早上他坐电梯下到1楼出门。晚上回来时，如果有人在电梯里，他就坐到10楼然后走楼梯上去；如果电梯里没人，他就直接坐到20楼。",answer:"这个男人是个侏儒。他够不到20楼的按钮，只能按到10楼的按钮。有人在的时候，他可以请别人帮他按20楼。",hints:["注意'10楼'这个数字，它为什么是一个分界点？","没人时他只能到10楼，有人时却能到20楼。这说明他的'能力'在有人的时候才能发挥？","他是个侏儒，按不到20楼的按钮，只能按到10楼。"]},
+{id:5,title:"丈夫的早餐",difficulty:"medium",surface:"妻子每天早上都会为丈夫做他最爱吃的煎蛋。某天早上，丈夫只吃了一口就冲出房间报警说妻子死了。",answer:"丈夫是盲人，平时靠味道分辨食物。那天早上妻子没放盐，他知道不是妻子做的，说明妻子出了意外，所以报警。",hints:["他只吃了一口就知道妻子出事了。这一口尝出了什么不同？","想想为什么他平时靠妻子做的饭'分辨'事物？他的哪项感官与众不同？","他是盲人，靠味道分辨。那天没放盐，说明不是妻子做的。"]},
+{id:6,title:"雪地的脚印",difficulty:"medium",surface:"一个男人被发现死在一座高塔的塔顶。塔顶的门从里面锁着，钥匙在死者口袋里。塔外是一片雪地，雪地上只有死者一个人的脚印。",answer:"死者是先走上塔顶，然后下雪了，覆盖了其他人的脚印。实际上他是自杀的——他走上塔顶锁好门，然后跳楼。雪地上只有他走上来的脚印。",hints:["雪地只有他一个人的脚印，但他是怎么死的？","门锁着，钥匙在他口袋里。如果没人来过，那凶手可能是...他自己？","他是自杀的。他走上塔顶锁好门，然后跳楼。雪地只有他走上来的脚印。"]},
+{id:7,title:"完美的演奏",difficulty:"hard",surface:"一位钢琴家在音乐会上演奏完毕，全场起立鼓掌。他鞠躬致谢后回到后台，看到一封信，读完就自杀了。",answer:"他是位聋人钢琴家，靠骨传导感知音乐。信里告诉他：他今晚其实完全没发出声音，因为钢琴坏了，观众起立鼓掌其实是在嘘他、准备离场。",hints:["全场起立鼓掌，但信里写了什么让他崩溃？","他是怎么'听到'自己演奏的？这种感知方式可靠吗？","他是聋人，靠骨传导感知。钢琴坏了，他其实没发出声音，观众是在嘘他。"]},
+{id:8,title:"最后一通电话",difficulty:"hard",surface:"一个男人深夜接到一通电话，他听完之后穿上衣服冲出家门，开车狂飙到医院。到了医院，他跪在走廊里痛哭。",answer:"他是一位器官移植医生，电话通知他有匹配的受捐者。他开车到医院，发现受捐者是他自己的儿子。",hints:["他深夜接到电话后冲去医院。电话里说了什么紧急的事？","为什么到了医院后，他跪在地上痛哭？见到的人是谁？","他是器官移植医生，受捐者是他自己的儿子。"]},
+{id:9,title:"红色的房间",difficulty:"easy",surface:"一个人走进房间，把灯打开，看到房间是红色的，就自杀了。",answer:"他是个核潜艇的水手，红色灯光是紧急警报，说明船正在进水或发生核泄漏。他知道逃不出去，绝望自杀。",hints:["房间是红色的。红色通常代表什么信号？","他把灯打开看到红色就自杀了，说明红色意味着什么级别的危险？","红色是核潜艇的紧急警报，船正在进水或核泄漏，他知道逃不出去。"]},
+{id:10,title:"照相馆",difficulty:"medium",surface:"一个女人走进照相馆拍照。拍完照后，她看了看照片，突然尖叫着跑了出去，然后被车撞死了。",answer:"她看到照片里背景有个凶手正举着刀站在她身后。她吓得尖叫逃跑，慌不择路被车撞死。",hints:["她看完照片后尖叫逃跑。照片里有什么可怕的东西？","照片拍的是她自己，但除了她，背景里还有什么？","照片背景里有个凶手举着刀站在她身后。"]},
+{id:11,title:"微笑的画像",difficulty:"easy",surface:"一个男人去参观美术馆，看到一幅女子的画像，女子在微笑。他盯着看了很久，突然崩溃大哭。",answer:"画像里的女子是他失踪多年的妻子。他以为她死了，但这幅画是最近才画的，说明她还活着，而且画家知道她在哪。",hints:["他盯着画像很久。这幅画和他有什么特殊关系？","画像里的女子在微笑。他崩溃大哭，是因为高兴还是悲伤？","画里的女子是他失踪多年的妻子，画是最近画的，说明她还活着。"]},
+{id:12,title:"午夜的敲门声",difficulty:"medium",surface:"一个男人独自住在深山老林的小屋里。某夜，他听到敲门声，开门后没人，只有一只死兔子。第二天、第三天同样的事情发生了。第四天，他没有听到敲门声，却自杀了。",answer:"敲门声是他妻子鬼魂的报丧暗号（三长两短）。第四天没来是因为他自己已经死了（心脏病发作），但他自己不知道，还在等。",hints:["连续三天都有死兔子，第四天没有。兔子和敲门声有什么规律？","敲门声是谁的？第四天没来，是因为'对方'放弃了吗？","敲门声是他妻子鬼魂的报丧暗号（三长两短）。第四天没来是因为他自己已经死了。"]},
+{id:13,title:"海底的钢琴",difficulty:"hard",surface:"潜水员在海底发现一架钢琴，钢琴上坐着一具骷髅，骷髅的手指还放在琴键上。",answer:"那是一艘沉船。船沉没时，盲人钢琴家还在演奏，因为他不知道发生了什么，直到海水灌满船舱。",hints:["钢琴在海底，说明这里曾经不是海底。发生了什么？","骷髅的手指还在琴键上。他是在什么状态下死去的？","那是沉船。盲人钢琴家在船沉没时还在演奏，因为他不知道发生了什么。"]},
+{id:14,title:"报纸",difficulty:"easy",surface:"一个男人每天早上都会买一份报纸，但他从来不看新闻版面，只看讣告栏。某天他看到一则讣告后，回家自杀了。",answer:"他是一位暗杀组织的杀手，每天看讣告确认目标是否死亡。某天他看到了自己的讣告——报社搞错了，但他以为组织已经决定除掉他，绝望自杀。",hints:["他每天只看讣告栏。讣告栏对他来说有什么特殊意义？","他看到了一则讣告后自杀。如果是别人的讣告，他为什么要自杀？","他是杀手，看讣告确认目标是否死亡。他看到了自己的讣告，以为组织要除掉他。"]},
+{id:15,title:"完美的尸体",difficulty:"hard",surface:"一具尸体被发现，尸体完好无损，没有任何外伤，也没有任何中毒迹象。周围没有其他人，门窗都从内部反锁。",answer:"他有严重的幽闭恐惧症，被意外锁在房间里，活活吓死了。外表完好，但心脏骤停。",hints:["没有任何外伤、没有中毒，门窗反锁。他是怎么死的？","排除所有他杀可能后，还剩下什么？注意死者可能有某种特殊状况。","他有严重的幽闭恐惧症，被意外锁在房间里，活活吓死了。"]}
+];
+
+function loadData(){let soups=localStorage.getItem('turtle_soups');if(!soups){soups=JSON.parse(JSON.stringify(DEFAULT_SOUPS));soups.forEach(s=>{s.plays=0;s.passes=0;s.totalTime=0});saveSoups(soups)}else{soups=JSON.parse(soups);DEFAULT_SOUPS.forEach(ds=>{let existing=soups.find(s=>s.id===ds.id);if(!existing){let ns=JSON.parse(JSON.stringify(ds));ns.plays=0;ns.passes=0;ns.totalTime=0;soups.push(ns)}else if(!existing.hints||!existing.hints.length){existing.hints=ds.hints}});saveSoups(soups)}return soups}
+function saveSoups(soups){localStorage.setItem('turtle_soups',JSON.stringify(soups))}
+function loadHistory(){let h=localStorage.getItem('turtle_history');return h?JSON.parse(h):[]}
+function saveHistory(h){localStorage.setItem('turtle_history',JSON.stringify(h))}
+function getConfig(){let c=localStorage.getItem('turtle_config');return c?JSON.parse(c):null}
+function saveConfigObj(c){localStorage.setItem('turtle_config',JSON.stringify(c))}
+function clearConfigObj(){localStorage.removeItem('turtle_config')}
+
+let SOUPS=loadData();
+let HISTORY=loadHistory();
+let gameState={soup:null,startTime:0,timerId:null,questions:0,history:[],ended:false,hintsUsed:0,messages:[],apiBusy:false,pendingQuestion:'',unclearCount:0,partialUsed:false};
+
+function switchView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+name).classList.add('active');document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));let nav=document.querySelector('.nav-item[data-view="'+name+'"]');if(nav)nav.classList.add('active');if(name==='library')renderLibrary('all');if(name==='stats')renderStats();if(name==='home')updateHomeCounts()}
+function updateHomeCounts(){document.getElementById('count-easy').textContent=SOUPS.filter(s=>s.difficulty==='easy').length+' 题';document.getElementById('count-medium').textContent=SOUPS.filter(s=>s.difficulty==='medium').length+' 题';document.getElementById('count-hard').textContent=SOUPS.filter(s=>s.difficulty==='hard').length+' 题';document.getElementById('count-total').textContent=SOUPS.length+' 题'}
+function updateMiniStats(){let total=HISTORY.length;let wins=HISTORY.filter(h=>h.win).length;let rate=total?Math.round(wins/total*100):0;document.getElementById('mini-total').textContent=total;document.getElementById('mini-win').textContent=wins;document.getElementById('mini-rate').textContent=rate+'%';let cfg=getConfig();document.getElementById('mini-mode').textContent=cfg?'AI':'本地';let status=document.getElementById('api-status');if(cfg){status.className='api-status ok';status.innerHTML='<span>AI 模式</span>'}else{status.className='api-status';status.innerHTML='<span>本地模式</span>'}}
+
+function showConfig(){let cfg=getConfig();if(cfg){document.getElementById('cfg-endpoint').value=cfg.endpoint||'';document.getElementById('cfg-model').value=cfg.model||'';document.getElementById('cfg-key').value=cfg.key||''}else{document.getElementById('cfg-endpoint').value='https://api.deepseek.com/v1/chat/completions';document.getElementById('cfg-model').value='deepseek-chat';document.getElementById('cfg-key').value=''}document.getElementById('config-modal').classList.add('active')}
+function closeConfig(){document.getElementById('config-modal').classList.remove('active')}
+function saveConfig(){let endpoint=document.getElementById('cfg-endpoint').value.trim();let model=document.getElementById('cfg-model').value.trim();let key=document.getElementById('cfg-key').value.trim();if(!key){alert('请输入 API Key');return}saveConfigObj({endpoint,model,key});closeConfig();updateMiniStats();alert('配置已保存')}
+function clearConfig(){clearConfigObj();document.getElementById('cfg-endpoint').value='https://api.deepseek.com/v1/chat/completions';document.getElementById('cfg-model').value='deepseek-chat';document.getElementById('cfg-key').value='';closeConfig();updateMiniStats();alert('已清除配置，切换为本地模式')}
+
+function startGame(difficulty){let pool=SOUPS;if(difficulty!=='random')pool=SOUPS.filter(s=>s.difficulty===difficulty);if(!pool.length){alert('该难度暂无题目');return}pool.sort((a,b)=>a.plays-b.plays);let soup=pool[0];beginGame(soup)}
+function beginGame(soup){if(gameState.timerId)clearInterval(gameState.timerId);gameState={soup:soup,startTime:Date.now(),timerId:setInterval(updateTimer,1000),questions:0,history:[],ended:false,hintsUsed:0,messages:[],apiBusy:false,pendingQuestion:'',unclearCount:0,partialUsed:false};document.getElementById('g-diff').textContent=diffLabel(soup.difficulty);document.getElementById('g-title').textContent=soup.title;document.getElementById('g-timer').textContent='00:00';document.getElementById('g-qcount').textContent='0';document.getElementById('chat').innerHTML='';document.getElementById('q-input').value='';document.getElementById('thinking-hint').style.display='none';document.getElementById('hint-btn').textContent='💡 提示 3/3';document.getElementById('hint-btn').disabled=false;addMsg('system','🍜 【汤面】'+soup.surface);addMsg('host','你可以通过提问来推理真相，我会回答「是」「否」或「无关」。觉得猜到了就点「我要揭底」。');let cfg=getConfig();if(!cfg)addMsg('host','⚠️ 当前为本地模式，判断精度有限。配置 API 后可获得更好的自然语言理解。');switchView('game')}
+function diffLabel(d){return d==='easy'?'简单':d==='medium'?'中等':'困难'}
+function updateTimer(){let sec=Math.floor((Date.now()-gameState.startTime)/1000);document.getElementById('g-timer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
+function formatTime(ms){let sec=Math.floor(ms/1000);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
+function addMsg(type,text,extra){let chat=document.getElementById('chat');let div=document.createElement('div');div.className='msg '+type;if(type==='host'&&extra){div.innerHTML='<div class="msg-host-name">🐢 海龟汤</div>'+escapeHtml(text)+extra}else if(type==='host'){div.innerHTML='<div class="msg-host-name">🐢 海龟汤</div>'+escapeHtml(text)}else{div.textContent=text}chat.appendChild(div);chat.scrollTop=chat.scrollHeight;if(gameState&&gameState.messages){gameState.messages.push({type,text,extra,time:formatTime(Date.now()-gameState.startTime)})}return div}
+function escapeHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function sendQuestion(){if(gameState.ended||gameState.apiBusy)return;let input=document.getElementById('q-input');let q=input.value.trim();if(!q)return;if(q.length>100){addMsg('host','问题请控制在100字以内，尽量问一个具体事实。');return}input.value='';await submitQuestion(q,false)}
+async function retryQuestion(){if(!gameState.pendingQuestion||gameState.apiBusy)return;let q=gameState.pendingQuestion;gameState.pendingQuestion='';await submitQuestion(q,true)}
+async function submitQuestion(q,isRetry){let btn=document.getElementById('send-btn');gameState.apiBusy=true;btn.disabled=true;btn.classList.add('loading');document.getElementById('thinking-hint').style.display='block';if(!isRetry)addMsg('player',q);try{let result=await judgeAnswer(q,gameState.soup);let ans=result.result;let badge=ans==='yes'?'<span class="answer-badge yes">是</span>':ans==='no'?'<span class="answer-badge no">否</span>':ans==='unclear'?'<span class="answer-badge unclear">需澄清</span>':'<span class="answer-badge irrelevant">无关</span>';addMsg('host',getHostReply(ans,result),badge);gameState.history.push({q,ans,reason:result.reason||'',direction:result.next_direction||''});gameState.questions++;document.getElementById('g-qcount').textContent=gameState.questions;gameState.unclearCount=ans==='irrelevant'||ans==='unclear'?(gameState.unclearCount||0)+1:0;if(gameState.unclearCount>=3){addMsg('host','你已经连续几次没有碰到核心，可以试着从人物身份、死亡原因或汤面中的特殊物品入手。');gameState.unclearCount=0}}catch(e){console.error(e);gameState.pendingQuestion=q;addMsg('host','AI裁判暂时没有回应，这次没有计入提问次数。你可以重试。','<div class="retry-action"><button class="btn" onclick="retryQuestion()">重新提交</button></div>')}finally{gameState.apiBusy=false;btn.disabled=false;btn.classList.remove('loading');document.getElementById('thinking-hint').style.display='none'}}
+function limitText(text,max){return String(text||'').replace(/[\r\n]+/g,' ').trim().slice(0,max)}
+function getHostReply(ans,result){if(ans==='yes')return '这个方向是对的，继续沿着这个线索推理。';if(ans==='no')return '这个方向和汤底不符，可以换一个角度。';if(ans==='unclear')return '这个问题有点宽泛，请尽量只问一个具体事实。';let direction=result&&result.next_direction;return direction?'这个问题暂时没有触及核心，可以关注'+limitText(direction,24)+'。':'这个问题暂时没有触及核心，试着关注人物身份、死亡原因或汤面中的细节。'}
+function parseAIJson(content){let clean=String(content||'').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();let parsed=JSON.parse(clean);if(!parsed||typeof parsed!=='object')throw new Error('AI response is not an object');return parsed}
+async function callAI(prompt,options){let cfg=getConfig();if(!cfg)throw new Error('AI config missing');let attempts=2;let lastError;for(let i=0;i<attempts;i++){let controller=new AbortController();let timeoutId=setTimeout(()=>controller.abort(),options.timeout||10000);try{let res=await fetch(cfg.endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},body:JSON.stringify({model:cfg.model||'deepseek-chat',messages:[{role:'system',content:options.system||'你是严谨的海龟汤主持人。'},{role:'user',content:prompt}],max_tokens:options.maxTokens||160,temperature:options.temperature===undefined?0:options.temperature,response_format:{type:'json_object'}}),signal:controller.signal});if(!res.ok)throw new Error('API HTTP '+res.status);let data=await res.json();let content=data.choices?.[0]?.message?.content;if(!content)throw new Error('API returned empty content');return parseAIJson(content)}catch(e){lastError=e;console.error('AI request failed, attempt '+(i+1),e)}finally{clearTimeout(timeoutId)}if(i<attempts-1)await new Promise(resolve=>setTimeout(resolve,500))}throw lastError||new Error('AI request failed')}
+async function judgeAnswer(question,soup){let cfg=getConfig();if(!cfg)return {result:localJudge(question,soup),confidence:.4,reason:'当前使用本地关键词判断，语义理解能力有限。',next_direction:''};let previous=gameState.history.slice(-12).map((h,i)=>(i+1)+'. '+h.q+' → '+h.ans).join('\n')||'（暂无提问）';let prompt='你是海龟汤游戏的事实裁判。只根据汤底判断，不要用无关常识补全。玩家的自然语言可以口语化、简略、使用同义词，也可能引用前文的“他”“那个东西”等指代。\n\n【汤面】\n'+soup.surface+'\n\n【汤底】\n'+soup.answer+'\n\n【此前提问】\n'+previous+'\n\n【当前问题】\n'+question+'\n\n请将当前问题理解为一个或多个事实判断。若可以明确回答，result 使用 yes 或 no；若和核心真相关系不大，使用 irrelevant；若问题模糊、含多个无法拆开的判断，使用 unclear。合理的必要推理可以算 yes，但不要凭常识臆测。reason 不超过30字，next_direction 只填写一个简短推理方向。只输出 JSON。';let data=await callAI(prompt,{maxTokens:180});let allowed=['yes','no','irrelevant','unclear'];if(!allowed.includes(data.result))throw new Error('Invalid answer result');return {result:data.result,confidence:Number(data.confidence)||0,reason:limitText(data.reason,80),next_direction:limitText(data.next_direction,30)}}
+
+function localJudge(question,soup){let q=question.toLowerCase();let answer=soup.answer.toLowerCase();let surface=soup.surface.toLowerCase();let negWords=['不是','没有','不会','不能','否','没死','没坏','假的','错','并非','不曾','未','无','别'];let hasNeg=negWords.some(nw=>q.includes(nw));
+
+// ===== 语义扩展：同义词/概念映射 =====
+let conceptGroups=[
+['热气球','气球','飞','飞行器','空中','飘','升','降落','掉下来','摔下来'],
+['盲人','瞎','看不见','视力','失明','眼睛','摸','读盲文'],
+['聋','听不见','听力','失聪','耳朵','骨传导'],
+['侏儒','矮','个子小','身高','够不到','矮人','矮小'],
+['自杀','自己杀自己','跳楼','上吊','服毒','跳桥','跳海','自寻短见'],
+['他杀','谋杀','凶手','被杀','遇害','被人杀死','暗杀','毒杀'],
+['意外','事故','车祸','坠楼','溺亡','火灾','爆炸','地震'],
+['电梯','升降梯','升降机','电梯间','按按钮'],
+['照片','相片','摄影','拍照','相机','拍'],
+['画像','画','油画','肖像','美术馆','博物馆','展览'],
+['钢琴','演奏','弹琴','音乐会','表演','乐器'],
+['报纸','讣告','新闻','刊物','报道'],
+['广播','电台','收音机','播音','新闻播报'],
+['电话','来电','接听','通话','手机'],
+['信','书信','信件','信纸','信封'],
+['医院','病房','医生','手术','急救','抢救'],
+['学校','教室','老师','学生','上课'],
+['船','轮船','潜艇','航母','海','航行','沉没','沉船'],
+['车','汽车','出租车','公交车','地铁','火车','车祸','撞'],
+['沙漠','沙丘','戈壁','干旱','无人区'],
+['雪地','雪','下雪','脚印','雪堆'],
+['火','火灾','着火','燃烧','浓烟','烈焰'],
+['雨','下雨','暴雨','淋雨','湿'],
+['锁','门锁','反锁','钥匙','打不开','锁住'],
+['窗户','窗','窗外','窗台','玻璃'],
+['门','门口','开门','敲门','关门'],
+['桥','大桥','断桥','桥面','桥塌'],
+['塔','高塔','塔顶','钟楼','楼顶'],
+['路','公路','马路','街道','高速公路'],
+['房间','屋子','室内','屋里','屋内'],
+['家','家里','住宅','住所','住处'],
+['红','红色','血红','鲜红','警报灯']
+];
+let expandedQ=q;
+for(let group of conceptGroups){let hit=false;for(let word of group){if(q.includes(word)){hit=true;break}}if(hit){for(let word of group){if(!expandedQ.includes(word))expandedQ+=' '+word}}}
+
+let answerWords=[...new Set(answer.split(/[，。！？、\s]+/).filter(w=>w.length>=2))];let matchCount=0;for(let word of answerWords){if(expandedQ.includes(word))matchCount++}if(hasNeg&&matchCount>=1)return 'no';if(matchCount>=1)return 'yes';
+
+let surfaceWords=[...new Set(surface.split(/[，。！？、\s]+/).filter(w=>w.length>=2))];let surfaceMatch=0;for(let word of surfaceWords){if(expandedQ.includes(word))surfaceMatch++}if(surfaceMatch>=2)return hasNeg?'no':'yes';if(surfaceMatch>=1)return 'yes';
+
+let broadKeywords=['死','杀','凶手','自杀','他杀','意外','谋杀','跳','摔','掉','飞','船','飞机','电梯','盲人','聋','哑','矮','侏儒','小孩','老人','医生','护士','警察','老师','画家','音乐家','演员','摄影师','司机','乘客','热气球','气球','飞机','电梯','楼梯','窗户','门','锁','钥匙','毒药','刀','枪','绳子','火柴','照片','画像','报纸','广播','电话','信','书','画','音乐','钢琴','演奏','表演','展览','美术馆','博物馆','医院','学校','家','房间','塔','桥','路','车','出租车','公交车','地铁','火车','船','潜艇','海','水','沙漠','雪地','雨','火','红','灯'];let broadMatch=0;for(let kw of broadKeywords){if((answer.includes(kw)||surface.includes(kw))&&expandedQ.includes(kw))broadMatch++}if(broadMatch>=2)return hasNeg?'no':'yes';if(broadMatch>=1)return 'yes';
+
+return 'irrelevant'}
+
+async function requestHint(){if(gameState.ended||gameState.apiBusy)return;if(gameState.hintsUsed>=3){addMsg('host','💡 提示次数已用完。');return}let btn=document.getElementById('hint-btn');btn.disabled=true;document.getElementById('thinking-hint').style.display='block';gameState.hintsUsed++;btn.textContent='💡 提示 '+(3-gameState.hintsUsed)+'/3';let soup=gameState.soup;let hintText='';try{if(soup.hints&&soup.hints.length>0){let idx=Math.min(gameState.hintsUsed-1,soup.hints.length-1);hintText=soup.hints[idx]}else if(getConfig()){let historyText=gameState.history.map((h,i)=>'Q'+(i+1)+': '+h.q+' → '+h.ans).join('\n')||'（暂无提问）';let prompt='根据以下海龟汤的汤面、汤底和玩家进度，生成一条不超过40字的方向性提示。不要直接说出真相，不要复述汤底。\n汤面：'+soup.surface+'\n汤底：'+soup.answer+'\n玩家提问：'+historyText+'\n只输出JSON：{"hint":"提示"}';let data=await callAI(prompt,{maxTokens:80,temperature:.5});hintText=limitText(data.hint,60)}}catch(e){console.error('Hint AI failed:',e)}if(!hintText){let fallbacks=['再仔细看看汤面里的每一个细节。','想想这个故事里有哪些不合常理的地方。','从结果倒推，什么情况下会导致这样的结局？','试着关注故事中提到的某个物品。','想想当事人的身份或特殊状况。'];hintText=fallbacks[Math.floor(Math.random()*fallbacks.length)]}addMsg('host','💡 提示（第'+gameState.hintsUsed+'/3次）：'+hintText);btn.disabled=gameState.hintsUsed>=3;document.getElementById('thinking-hint').style.display='none'}
+
+function showGuess(){if(gameState.ended)return;document.getElementById('guess-modal').classList.add('active');document.getElementById('guess-input').value='';setTimeout(()=>document.getElementById('guess-input').focus(),100)}
+function closeGuess(){document.getElementById('guess-modal').classList.remove('active')}
+function submitGuess(){let input=document.getElementById('guess-input');let guess=input.value.trim();if(!guess)return;if(guess.length>200){alert('答案请控制在200字以内。');return}closeGuess();endGame(true,guess)}
+function continueGuess(){switchView('game');showGuess()}
+function showReview(){let content=document.getElementById('review-content');let messages=(gameState.messages&&gameState.messages.length)?gameState.messages:(HISTORY.length&&HISTORY[0].messages?HISTORY[0].messages:[]);if(!messages||!messages.length){content.innerHTML='<div style="color:var(--text2);text-align:center">暂无记录</div>'}else{content.innerHTML=messages.map(m=>{let prefix='';if(m.type==='system')prefix='🍜 ';else if(m.type==='player')prefix='👤 你：';else if(m.type==='host')prefix='🐢 ';let text=escapeHtml(m.text||'');let extra=m.extra||'';return '<div style="margin-bottom:8px">'+prefix+text+extra+'</div>'}).join('')}document.getElementById('review-modal').classList.add('active')}
+function closeReview(){document.getElementById('review-modal').classList.remove('active')}
+function giveUp(){if(!confirm('确定要放弃这道题吗？'))return;endGame(false,'')}
+
+async function endGame(win,guess){if(gameState.ended||gameState.apiBusy)return;let soup=gameState.soup;let verdict=win?null:{result:'wrong'};if(win){gameState.apiBusy=true;document.getElementById('thinking-hint').style.display='block';try{verdict=await judgeGuess(guess,soup)}catch(e){gameState.apiBusy=false;document.getElementById('thinking-hint').style.display='none';addMsg('host','AI裁判暂时没有回应，答案没有提交成功。请稍后重试。');return}gameState.apiBusy=false;document.getElementById('thinking-hint').style.display='none';if(verdict.result==='partial'&&!gameState.partialUsed){gameState.partialUsed=true;showResultState('partial',guess,verdict,0);return}}gameState.ended=true;clearInterval(gameState.timerId);let timeUsed=Date.now()-gameState.startTime;soup.plays++;if(win&&verdict.result==='correct'){soup.passes++;soup.totalTime+=timeUsed}saveSoups(SOUPS);let diffMult=soup.difficulty==='easy'?1:soup.difficulty==='medium'?1.5:2;let timeScore=Math.max(0,300-Math.floor(timeUsed/1000));let qScore=Math.max(0,50-gameState.questions);let hintPenalty=gameState.hintsUsed*15;let baseScore=Math.max(0,Math.floor((timeScore+qScore*2)*diffMult)-hintPenalty);let reallyWin=win&&verdict.result==='correct';let score=reallyWin?baseScore:win&&verdict.result==='partial'?Math.floor(baseScore*.6):0;let recordGuess=win?guess:'（放弃）';gameState.guess=recordGuess;let messagesCopy=JSON.parse(JSON.stringify(gameState.messages||[]));HISTORY.unshift({title:soup.title,difficulty:soup.difficulty,win:reallyWin,time:timeUsed,questions:gameState.questions,score:score,date:new Date().toISOString(),guess:recordGuess,messages:messagesCopy});saveHistory(HISTORY);updateMiniStats();showResultState(reallyWin?'correct':(win?'wrong':'giveup'),recordGuess,verdict,score)}
+function showResultState(state,guess,verdict,score){let reallyWin=state==='correct';let partial=state==='partial';let giveup=state==='giveup';document.getElementById('r-icon').textContent=reallyWin?'🏆':partial?'🧩':giveup?'🏳️':'💀';document.getElementById('r-title').textContent=reallyWin?'恭喜通关！':partial?'你已经接近真相':giveup?'放弃了':'不太对...';document.getElementById('r-sub').textContent=reallyWin?'你揭开了汤底的真相':partial?'已经抓住了核心方向，再补充一个关键细节吧':giveup?'这道题确实很难，来看看完整真相':'你的答案和汤底还有差距，看看完整真相';document.getElementById('r-time').textContent=formatTime(Date.now()-gameState.startTime);document.getElementById('r-questions').textContent=gameState.questions;document.getElementById('r-hints').textContent=gameState.hintsUsed;document.getElementById('r-score').textContent=score;document.getElementById('r-guess').textContent=guess||'（放弃）';document.getElementById('r-soup').textContent=gameState.soup.answer;let detail=document.getElementById('r-partial-detail');let cont=document.getElementById('r-continue');if(partial){detail.style.display='block';document.getElementById('r-matched').textContent=(verdict.matched_points||[]).join('、')||'已抓住部分核心方向';document.getElementById('r-missing').textContent=verdict.missing_point||'再补充关键因果关系';cont.style.display='inline-block'}else{detail.style.display='none';cont.style.display='none'}switchView('result')}
+
+async function judgeGuess(guess,soup){let cfg=getConfig();if(!cfg){let local=localJudgeGuess(guess,soup);return {result:local?'correct':'wrong',confidence:.35,matched_points:local?['命中了部分汤底关键词']:[],missing_point:local?'仍建议核对完整因果关系':''}}let prompt='你是海龟汤最终裁判。判断玩家是否理解了汤底核心，不要求逐字复述。表达不同但核心事实、动机或因果关系一致，算 correct；抓住主要方向但漏掉关键事实，算 partial；核心方向错误，算 wrong。不要使用无关常识推测。\n\n【汤底】\n'+soup.answer+'\n\n【玩家答案】\n'+guess+'\n\n只输出JSON：{"result":"correct|partial|wrong","confidence":0,"matched_points":["已猜中要点"],"missing_point":"缺少的关键点"}';let data=await callAI(prompt,{maxTokens:180});if(!['correct','partial','wrong'].includes(data.result))throw new Error('Invalid guess result');return {result:data.result,confidence:Number(data.confidence)||0,matched_points:Array.isArray(data.matched_points)?data.matched_points.slice(0,4).map(x=>limitText(x,40)):[],missing_point:limitText(data.missing_point,80)}}
+
+function localJudgeGuess(guess,soup){let g=guess.toLowerCase();let answer=soup.answer.toLowerCase();let negWords=['不是','没有','不会','不能','否','没死','没坏','假的','错','并非','不曾','未','无','别'];let hasNeg=negWords.some(nw=>g.includes(nw));
+
+// 语义扩展：同义词/概念映射
+let conceptGroups=[
+['热气球','气球','飞','飞行器','空中','飘','升','降落','掉下来','摔下来'],
+['盲人','瞎','看不见','视力','失明','眼睛','摸','读盲文'],
+['聋','听不见','听力','失聪','耳朵','骨传导'],
+['侏儒','矮','个子小','身高','够不到','矮人','矮小'],
+['自杀','自己杀自己','跳楼','上吊','服毒','跳桥','跳海','自寻短见'],
+['他杀','谋杀','凶手','被杀','遇害','被人杀死','暗杀','毒杀'],
+['意外','事故','车祸','坠楼','溺亡','火灾','爆炸','地震'],
+['电梯','升降梯','升降机','电梯间','按按钮'],
+['照片','相片','摄影','拍照','相机','拍'],
+['画像','画','油画','肖像','美术馆','博物馆','展览'],
+['钢琴','演奏','弹琴','音乐会','表演','乐器'],
+['报纸','讣告','新闻','刊物','报道'],
+['广播','电台','收音机','播音','新闻播报'],
+['电话','来电','接听','通话','手机'],
+['信','书信','信件','信纸','信封'],
+['医院','病房','医生','手术','急救','抢救'],
+['学校','教室','老师','学生','上课'],
+['船','轮船','潜艇','航母','海','航行','沉没','沉船'],
+['车','汽车','出租车','公交车','地铁','火车','车祸','撞'],
+['沙漠','沙丘','戈壁','干旱','无人区'],
+['雪地','雪','下雪','脚印','雪堆'],
+['火','火灾','着火','燃烧','浓烟','烈焰'],
+['雨','下雨','暴雨','淋雨','湿'],
+['锁','门锁','反锁','钥匙','打不开','锁住'],
+['窗户','窗','窗外','窗台','玻璃'],
+['门','门口','开门','敲门','关门'],
+['桥','大桥','断桥','桥面','桥塌'],
+['塔','高塔','塔顶','钟楼','楼顶'],
+['路','公路','马路','街道','高速公路'],
+['房间','屋子','室内','屋里','屋内'],
+['家','家里','住宅','住所','住处'],
+['红','红色','血红','鲜红','警报灯'],
+['苹果派','苹果','派','想吃','吃','妈妈','母亲','单纯','简单','温情']
+];
+let expandedG=g;
+for(let group of conceptGroups){let hit=false;for(let word of group){if(g.includes(word)){hit=true;break}}if(hit){for(let word of group){if(!expandedG.includes(word))expandedG+=' '+word}}}
+
+let answerWords=[...new Set(answer.split(/[，。！？、\s]+/).filter(w=>w.length>=2))];let matchCount=0;for(let word of answerWords){if(expandedG.includes(word))matchCount++}if(hasNeg&&matchCount>=1)return false;if(matchCount>=2)return true;if(matchCount>=1&&g.length>=4)return true;return false}
+
+function renderLibrary(filter){let list=document.getElementById('soup-list');let soups=SOUPS;if(filter!=='all')soups=SOUPS.filter(s=>s.difficulty===filter);if(!soups.length){list.innerHTML='<div class="empty-state"><div class="icon">📭</div><div>暂无题目</div></div>';return}list.innerHTML=soups.map(s=>{let avgTime=s.passes?Math.floor(s.totalTime/s.passes/1000):0;let avgStr=avgTime?String(Math.floor(avgTime/60)).padStart(2,'0')+':'+String(avgTime%60).padStart(2,'0'):'-';return '<div class="soup-row" onclick="playSoup('+s.id+')"><div class="s-title">'+escapeHtml(s.title)+'</div><span class="s-diff '+s.difficulty+'">'+diffLabel(s.difficulty)+'</span><span class="s-stat">玩过 '+s.plays+' 次</span><span class="s-stat">通过 '+s.passes+'</span><span class="s-stat">均时 '+avgStr+'</span></div>'}).join('')}
+function filterLib(diff,btn){document.querySelectorAll('.library-toolbar .btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderLibrary(diff)}
+function playSoup(id){let soup=SOUPS.find(s=>s.id===id);if(!soup)return;beginGame(soup)}
+
+function renderStats(){let total=HISTORY.length;let wins=HISTORY.filter(h=>h.win).length;let rate=total?Math.round(wins/total*100):0;let winGames=HISTORY.filter(h=>h.win);let best='-';if(winGames.length){let fastest=winGames.reduce((a,b)=>a.time<b.time?a:b);best=formatTime(fastest.time)}document.getElementById('s-total').textContent=total;document.getElementById('s-win').textContent=wins;document.getElementById('s-rate').textContent=rate+'%';document.getElementById('s-best').textContent=best;let list=document.getElementById('history-list');if(!HISTORY.length){list.innerHTML='<div class="empty-state"><div class="icon">📝</div><div>还没有游戏记录</div></div>';return}list.innerHTML=HISTORY.slice(0,50).map(h=>{let date=new Date(h.date);let dateStr=(date.getMonth()+1)+'/'+date.getDate()+' '+String(date.getHours()).padStart(2,'0')+':'+String(date.getMinutes()).padStart(2,'0');return '<div class="history-item"><span class="h-title">'+escapeHtml(h.title)+'</span><span class="h-result '+(h.win?'win':'lose')+'">'+(h.win?'通关':'未通关')+'</span><span class="h-meta">'+formatTime(h.time)+' · '+h.questions+'问 · '+h.score+'分</span><span class="h-meta">'+dateStr+'</span></div>'}).join('')}
+
+updateHomeCounts();
+updateMiniStats();
+</script>
+</body>
+</html>
