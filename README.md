@@ -8,7 +8,7 @@
 
 ## 在线体验
 
-发布到 GitHub Pages 后，可通过仓库 Pages 地址直接打开。
+https://1yy1yy1y1y1.github.io/haiguitang/
 
 ## 本地打开
 
